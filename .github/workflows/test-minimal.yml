@@ -7,6 +7,6 @@ jobs:
   hello:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "hello"
-        env:
-          PW: ${{ secrets.YONSEI_PW }}
+      - name: Decode ID
+        run: echo "ID=$(echo '${{ secrets.YONSEI_ID_B64 }}' | base64 -d)" >> "$GITHUB_ENV"
+      - run: echo "ID is $ID"
