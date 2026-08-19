@@ -24,9 +24,15 @@ jobs:
 
       - run: python -m playwright install --with-deps chromium
 
+      # GitHub Actions secrets에 한글(비ASCII) 값이 있으면 워크플로가 시작 단계부터
+      # startup_failure로 죽는 문제가 있어서(실제 테스트로 확인함), 로그인 ID는
+      # base64로 인코딩해서 저장해두고 여기서 디코딩해 일반 환경변수로 넘김.
+      - name: Decode Yonsei ID
+        run: echo "YONSEI_ID_DECODED=$(echo '${{ secrets.YONSEI_ID_B64 }}' | base64 -d)" >> "$GITHUB_ENV"
+
       - run: python pipeline.py
         env:
-          ID: ${{ secrets.YONSEI_ID }}
+          ID: ${{ env.YONSEI_ID_DECODED }}
           PW: ${{ secrets.YONSEI_PW }}
           TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
