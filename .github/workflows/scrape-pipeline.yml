@@ -4,7 +4,7 @@ on:
   schedule:
     # 매주 월요일 03:00 KST (일요일 18:00 UTC) - 주일 예배 데이터가 다 쌓인 뒤 실행
     - cron: "0 18 * * 0"
-  workflow_dispatch: {}
+  workflow_dispatch:
 
 permissions:
   contents: read
