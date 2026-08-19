@@ -40,7 +40,9 @@ WORSHIP_OPTIONS = {
     "주일 4부 예배": "268",
     "교회학교": "418",
 }
-HEADLESS = False  # 처음 몇 번은 False로 눈으로 확인 후 True로 전환 권장
+# 로컬에서 눈으로 확인할 땐 .env에 HEADLESS=false, GitHub Actions 등 화면 없는
+# 환경에서는 기본값(true)으로 자동 동작함.
+HEADLESS = os.getenv("HEADLESS", "true").lower() != "false"
 # -------------------------------------------------------------------------
 
 
