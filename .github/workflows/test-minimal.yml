@@ -10,7 +10,3 @@ jobs:
       - run: echo "hello"
         env:
           ID: ${{ secrets.YONSEI_ID }}
-          PW: ${{ secrets.YONSEI_PW }}
-          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
-          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
-          HEADLESS: "true"
