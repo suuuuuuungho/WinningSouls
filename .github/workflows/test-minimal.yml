@@ -18,11 +18,4 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
-      - run: python -m playwright install --with-deps chromium
       - run: echo "hello"
-        env:
-          ID: ${{ secrets.YONSEI_ID }}
-          PW: ${{ secrets.YONSEI_PW }}
-          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
-          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
-          HEADLESS: "true"
