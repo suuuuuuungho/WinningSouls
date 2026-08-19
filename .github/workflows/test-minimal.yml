@@ -9,4 +9,4 @@ jobs:
     steps:
       - run: echo "hello"
         env:
-          ID: ${{ secrets.YONSEI_ID }}
+          PW: ${{ secrets.YONSEI_PW }}
