@@ -3,13 +3,47 @@ import { createClient } from "@libsql/client/web";
 const MODEL = "claude-haiku-4-5-20251001";
 
 const SCHEMA_DESC = `
-members (교인 목록)
-  member_key TEXT PRIMARY KEY, name TEXT, birth_date TEXT, gender TEXT, phone TEXT,
-  position TEXT, cell_group TEXT, institution TEXT, status TEXT, updated_at TEXT
+Member (교인 목록 - 중등부/중등부 신입부만, 교사는 제외됨)
+  ID TEXT PRIMARY KEY   -- 교번(고유 회원번호)
+  Name TEXT
+  Division TEXT         -- 소속 기관 ('중등부' 또는 '중등부 신입부')
+  Birth_Date TEXT        -- YYYY-MM-DD
+  Gender TEXT            -- '남' 또는 '여'
+  Resister_date TEXT     -- 등록일 YYYY-MM-DD
+  Phone TEXT
+  Status TEXT             -- 현재 상태 (예: '정회원', '일반회원', '신입회원', '섬김회원')
+  Leader_ID TEXT           -- 인도자(리더)의 교번
+  Leader TEXT              -- 인도자 이름
+  Leader_Div TEXT          -- 인도자 소속
+  Leader_Phone TEXT
 
-attendance (출석 기록)
-  member_key TEXT, member_name TEXT, service_date TEXT(YYYY-MM-DD), service_type TEXT,
-  institution TEXT, present TEXT, inserted_at TEXT
+Att_1 / Att_2 / Att_3 / Att_4 / Att_School
+  (각각 주일 1부/2부/3부/4부 예배, 교회학교의 예배별 출석 기록. 구조는 5개 테이블 전부 동일하고
+   값 컬럼 이름만 테이블명과 같음: Att_1 테이블은 Att_1 컬럼, Att_School 테이블은 Att_School 컬럼.
+   조회 기간(최근 3년) 내 그 예배가 있었던 날짜마다, 교인 전원에 대해 무조건 한 행씩 있음
+   - 결석도 명시적으로 행이 있고 값이 '불참'임. 즉 이 테이블들만으로 특정 예배의
+   "결석자"를 바로 WHERE 절로 조회할 수 있음 (JOIN 불필요).)
+  ID TEXT           -- Member.ID 와 동일 값
+  Name TEXT
+  Div TEXT           -- '중등부' 또는 '중등부 신입부'
+  Div_Grade TEXT      -- 학년
+  Div_Class TEXT       -- 반
+  Status TEXT
+  Resister_date TEXT
+  Att_Date TEXT         -- YYYY-MM-DD, 그 예배가 있었던 날짜
+  Att_1 (또는 Att_2/Att_3/Att_4/Att_School) TEXT  -- '참석' / '가정' / '불참' 중 하나
+
+Att (주일 단위 집계 - 예배 하나라도 참석하면 "주일예배 참석"으로 인정한 최종 결과.
+     Att_1~Att_School과 마찬가지로 교인 x Att_Date 전체에 대해 행이 다 있음)
+  ID, Name, Div, Div_Grade, Div_Class, Status, Resister_date, Att_Date  -- 위와 동일 의미
+  Att_1, Att_2, Att_3, Att_4, Att_School TEXT  -- 각 예배 테이블의 값을 그대로 복사한 것
+  Att TEXT   -- 그 주일의 최종 분류. 아래 우선순위로 계산된 값이며 반드시 이 4개 문자열 중 하나:
+                '참석'   : 교회학교를 참석함
+                '타예배' : 교회학교는 안 왔지만 1부/2부/3부/4부 중 하나는 참석함
+                '가정'   : 참석은 하나도 없지만 가정예배는 했음
+                '불참'   : 아무것도 안 함
+              -> "주일예배 결석자"는 WHERE Att='불참' 로 바로 구할 수 있음 (JOIN 불필요).
+              -> "주일예배 참석"을 넓게 물으면(교회학교든 다른 예배든 상관없이) Att IN ('참석','타예배') 사용.
 `;
 
 const SQL_SYSTEM_PROMPT = `너는 교회 출석 데이터베이스(SQLite/libSQL)에 대한 SQL 생성기다.

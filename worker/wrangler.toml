@@ -4,8 +4,7 @@ compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
-# GitHub Pages 배포 주소로 바꿔주세요 (예: "https://yourname.github.io")
-ALLOWED_ORIGIN = "*"
+ALLOWED_ORIGIN = "https://suuuuuuungho.github.io"
 
 # 실제 비밀값은 커밋하지 말고 아래 명령으로 등록하세요:
 #   wrangler secret put ANTHROPIC_API_KEY
