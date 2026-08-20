@@ -7,8 +7,6 @@ const VALUE_CHIP = {
   불참: "bg-error/10 text-error",
 };
 
-const MAX_CELLS = 4000;
-
 function ValueChip({ value }) {
   if (!value) return <span className="text-on-surface-variant/40">-</span>;
   const cls = VALUE_CHIP[value] || "bg-surface-container-high text-on-surface-variant";
@@ -43,14 +41,6 @@ export default function AttendanceTable({ rows, loading, truncated, error }) {
 
   if (members.length === 0) {
     return <p className="text-body-md font-body-md text-on-surface-variant py-md">조건에 맞는 데이터가 없습니다.</p>;
-  }
-
-  if (members.length * dates.length > MAX_CELLS) {
-    return (
-      <p className="text-body-md font-body-md text-on-surface-variant py-md">
-        표시할 데이터가 많습니다({members.length}명 × {dates.length}주). 반 또는 기간을 좁혀주세요.
-      </p>
-    );
   }
 
   return (
