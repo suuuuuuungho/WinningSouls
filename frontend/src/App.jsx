@@ -1,8 +1,7 @@
 import { useState } from "react";
-import GlobalNav from "./components/GlobalNav.jsx";
-import Hero from "./components/Hero.jsx";
-import ChatPanel from "./components/ChatPanel.jsx";
-import Footer from "./components/Footer.jsx";
+import IconRail from "./components/IconRail.jsx";
+import ChatHeader from "./components/ChatHeader.jsx";
+import ChatArea from "./components/ChatArea.jsx";
 import { askQuestion } from "./lib/api.js";
 
 export default function App() {
@@ -32,11 +31,14 @@ export default function App() {
   }
 
   return (
-    <div className="page">
-      <GlobalNav />
-      <Hero onExample={handleAsk} disabled={pending} />
-      <ChatPanel messages={messages} pending={pending} onAsk={handleAsk} />
-      <Footer />
+    <div className="bg-background font-body-md text-on-background">
+      <IconRail />
+      <div className="pl-[72px]">
+        <ChatHeader />
+        <main className="pt-20 h-screen">
+          <ChatArea messages={messages} pending={pending} onAsk={handleAsk} />
+        </main>
+      </div>
     </div>
   );
 }
