@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const VALUE_CHIP = {
   참석: "bg-green-100 text-green-700",
@@ -6,6 +6,8 @@ const VALUE_CHIP = {
   가정: "bg-amber-100 text-amber-700",
   불참: "bg-error/10 text-error",
 };
+
+const PAGE_SIZE = 50;
 
 function ValueChip({ value }) {
   if (!value) return <span className="text-on-surface-variant/40">-</span>;
@@ -18,6 +20,8 @@ function ValueChip({ value }) {
 }
 
 export default function AttendanceTable({ rows, loading, truncated, error }) {
+  const [page, setPage] = useState(1);
+
   const { dates, members } = useMemo(() => {
     const dateSet = new Set();
     const memberMap = new Map();
@@ -29,6 +33,10 @@ export default function AttendanceTable({ rows, loading, truncated, error }) {
       memberMap.get(r.ID).values.set(r.Att_Date, r.Value);
     }
     return { dates: [...dateSet].sort(), members: [...memberMap.entries()] };
+  }, [rows]);
+
+  useEffect(() => {
+    setPage(1);
   }, [rows]);
 
   if (error) {
@@ -43,6 +51,10 @@ export default function AttendanceTable({ rows, loading, truncated, error }) {
     return <p className="text-body-md font-body-md text-on-surface-variant py-md">조건에 맞는 데이터가 없습니다.</p>;
   }
 
+  const totalPages = Math.max(1, Math.ceil(members.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const shownMembers = members.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
   return (
     <div>
       {truncated && (
@@ -50,7 +62,7 @@ export default function AttendanceTable({ rows, loading, truncated, error }) {
           결과가 많아 일부만 표시됩니다. 필터를 좁혀주세요.
         </p>
       )}
-      <div className="overflow-auto custom-scrollbar max-h-[60vh] rounded-xl border border-outline-variant/30">
+      <div className="overflow-x-auto custom-scrollbar rounded-xl border border-outline-variant/30">
         <table className="text-label-sm border-collapse">
           <thead>
             <tr>
@@ -68,7 +80,7 @@ export default function AttendanceTable({ rows, loading, truncated, error }) {
             </tr>
           </thead>
           <tbody>
-            {members.map(([id, m]) => (
+            {shownMembers.map(([id, m]) => (
               <tr key={id} className="border-t border-outline-variant/20">
                 <td className="sticky left-0 z-10 bg-surface px-sm py-xs whitespace-nowrap">
                   <span className="text-on-surface font-body-md-bold">{m.Name}</span>{" "}
@@ -84,6 +96,30 @@ export default function AttendanceTable({ rows, loading, truncated, error }) {
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-md mt-sm">
+          <button
+            type="button"
+            disabled={currentPage === 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            className="px-sm py-xs rounded-full text-label-sm bg-surface text-on-surface-variant border border-outline-variant/30 disabled:opacity-40 hover:bg-surface-container-high"
+          >
+            이전
+          </button>
+          <span className="text-label-sm font-label-sm text-on-surface-variant">
+            {currentPage} / {totalPages} 페이지 · 총 {members.length}명
+          </span>
+          <button
+            type="button"
+            disabled={currentPage === totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            className="px-sm py-xs rounded-full text-label-sm bg-surface text-on-surface-variant border border-outline-variant/30 disabled:opacity-40 hover:bg-surface-container-high"
+          >
+            다음
+          </button>
+        </div>
+      )}
     </div>
   );
 }
