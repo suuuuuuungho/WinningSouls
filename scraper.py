@@ -86,7 +86,7 @@ def _download_via_button(page, click_action) -> "Download":
     try:
         # 다운로드가 원래 페이지가 아니라 방금 뜬 팝업 창에서 발생할 수도 있어서
         # 컨텍스트 단위(page 무관)로 download 이벤트를 기다림.
-        with page.context.expect_event("download", timeout=240000) as download_info:
+        with page.context.expect_event("download", timeout=480000) as download_info:
             click_action()
         download = download_info.value
     except Exception:
