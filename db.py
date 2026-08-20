@@ -215,7 +215,7 @@ def recompute_att(client: libsql_client.ClientSync, att_dates: list):
             LEFT JOIN Att_4 a4 ON a4.ID = m.ID AND a4.Att_Date = :d
             LEFT JOIN Att_School asch ON asch.ID = m.ID AND asch.Att_Date = :d
             ON CONFLICT(ID, Att_Date) DO UPDATE SET
-                Div_Grade=excluded.Div_Grade, Div_Class=excluded.Div_Class,
+                Div=excluded.Div, Div_Grade=excluded.Div_Grade, Div_Class=excluded.Div_Class,
                 Status=excluded.Status, Att=excluded.Att,
                 Att_1=excluded.Att_1, Att_2=excluded.Att_2, Att_3=excluded.Att_3,
                 Att_4=excluded.Att_4, Att_School=excluded.Att_School,
