@@ -1,10 +1,11 @@
 import { useMemo } from "react";
 
 const PRESETS = [
+  { label: "최근 4주", weeks: 4 },
   { label: "최근 8주", weeks: 8 },
-  { label: "최근 13주", weeks: 13 },
-  { label: "최근 26주", weeks: 26 },
-  { label: "전체", weeks: null },
+  { label: "최근 12주", weeks: 12 },
+  { label: "최근 6개월", weeks: 26 },
+  { label: "최근 1년", weeks: 52 },
 ];
 
 function addDays(dateStr, days) {
