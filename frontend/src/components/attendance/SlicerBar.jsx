@@ -7,14 +7,30 @@ const PRESETS = [
   { label: "전체", weeks: null },
 ];
 
-function toggleInArray(arr, value) {
-  return arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value];
-}
-
 function addDays(dateStr, days) {
   const d = new Date(`${dateStr}T00:00:00`);
   d.setDate(d.getDate() + days);
   return d.toISOString().slice(0, 10);
+}
+
+function FilterSelect({ label, value, onChange, options, allLabel = "전체" }) {
+  return (
+    <label className="flex items-center gap-xs text-label-sm font-label-sm text-on-surface-variant">
+      {label}
+      <select
+        value={value || ""}
+        onChange={(e) => onChange(e.target.value || null)}
+        className="bg-surface rounded-lg px-sm py-[2px] text-body-md font-body-md text-on-surface border border-outline-variant/30"
+      >
+        <option value="">{allLabel}</option>
+        {options.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
 }
 
 export default function SlicerBar({ meta, filters, onChange }) {
@@ -52,73 +68,49 @@ export default function SlicerBar({ meta, filters, onChange }) {
   return (
     <div className="flex flex-col gap-sm bg-surface-container-low rounded-2xl p-md">
       <div className="flex flex-wrap items-center gap-md">
+        <FilterSelect
+          label="부서"
+          value={filters.div}
+          options={divisions}
+          onChange={(v) => onChange({ ...filters, div: v, grades: [], classes: [] })}
+        />
+
+        <FilterSelect
+          label="학년"
+          value={filters.grades[0]}
+          options={grades}
+          onChange={(v) => onChange({ ...filters, grades: v ? [v] : [], classes: [] })}
+        />
+
+        <FilterSelect
+          label="반"
+          value={filters.classes[0]}
+          options={classes}
+          onChange={(v) => onChange({ ...filters, classes: v ? [v] : [] })}
+        />
+      </div>
+
+      <div className="flex flex-wrap items-center gap-xs">
         <label className="flex items-center gap-xs text-label-sm font-label-sm text-on-surface-variant">
-          부서
+          기간
           <select
-            value={filters.div || ""}
-            onChange={(e) =>
-              onChange({ ...filters, div: e.target.value || null, grades: [], classes: [] })
-            }
+            value=""
+            onChange={(e) => {
+              const weeks = e.target.value === "" ? undefined : e.target.value === "all" ? null : Number(e.target.value);
+              if (weeks !== undefined) applyPreset(weeks);
+            }}
             className="bg-surface rounded-lg px-sm py-[2px] text-body-md font-body-md text-on-surface border border-outline-variant/30"
           >
-            <option value="">전체</option>
-            {divisions.map((d) => (
-              <option key={d} value={d}>
-                {d}
+            <option value="" disabled>
+              빠른 선택
+            </option>
+            {PRESETS.map((p) => (
+              <option key={p.label} value={p.weeks === null ? "all" : p.weeks}>
+                {p.label}
               </option>
             ))}
           </select>
         </label>
-
-        <div className="flex flex-wrap items-center gap-xs">
-          <span className="text-label-sm font-label-sm text-on-surface-variant">학년</span>
-          {grades.map((g) => (
-            <button
-              key={g}
-              type="button"
-              onClick={() => onChange({ ...filters, grades: toggleInArray(filters.grades, g), classes: [] })}
-              className={`px-sm py-[2px] rounded-full text-label-sm ${
-                filters.grades.includes(g)
-                  ? "bg-primary-container text-on-primary-container"
-                  : "bg-surface text-on-surface-variant border border-outline-variant/30"
-              }`}
-            >
-              {g}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-xs">
-          <span className="text-label-sm font-label-sm text-on-surface-variant">반</span>
-          {classes.map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => onChange({ ...filters, classes: toggleInArray(filters.classes, c) })}
-              className={`px-sm py-[2px] rounded-full text-label-sm ${
-                filters.classes.includes(c)
-                  ? "bg-primary-container text-on-primary-container"
-                  : "bg-surface text-on-surface-variant border border-outline-variant/30"
-              }`}
-            >
-              {c}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-xs">
-        <span className="text-label-sm font-label-sm text-on-surface-variant">기간</span>
-        {PRESETS.map((p) => (
-          <button
-            key={p.label}
-            type="button"
-            onClick={() => applyPreset(p.weeks)}
-            className="px-sm py-[2px] rounded-full text-label-sm bg-surface text-on-surface-variant border border-outline-variant/30 hover:bg-surface-container-high"
-          >
-            {p.label}
-          </button>
-        ))}
         <input
           type="date"
           value={filters.dateFrom || ""}
