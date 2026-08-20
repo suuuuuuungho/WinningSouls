@@ -1,51 +1,61 @@
 import { useEffect, useRef, useState } from "react";
+import Modal from "./Modal.jsx";
 
-function ResultAttachment({ sql, rows }) {
-  if (!rows || rows.length === 0) return null;
+function ResultTable({ sql, rows }) {
   const cols = Object.keys(rows[0]);
   const shown = rows.slice(0, 50);
 
   return (
-    <details className="bg-surface p-base rounded-2xl rounded-bl-sm shadow-[0_2px_4px_-2px_rgba(0,0,0,0.03)] border border-outline-variant/10 mt-sm">
-      <summary className="flex items-center gap-sm cursor-pointer list-none">
-        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
-          <span className="material-symbols-outlined">table_chart</span>
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-body-md-bold font-body-md-bold text-on-surface">쿼리 결과</p>
-          <p className="text-label-sm font-label-sm text-on-surface-variant">{rows.length}행 · SQL 보기</p>
-        </div>
-      </summary>
-      <div className="mt-sm">
-        <pre className="text-label-sm bg-on-surface text-inverse-on-surface rounded-xl p-sm overflow-x-auto custom-scrollbar">
-          {sql}
-        </pre>
-        <div className="overflow-x-auto custom-scrollbar mt-xs rounded-xl border border-outline-variant/30">
-          <table className="w-full text-label-sm">
-            <thead>
-              <tr className="bg-surface-container-low">
+    <div>
+      <pre className="text-label-sm bg-on-surface text-inverse-on-surface rounded-xl p-sm overflow-x-auto custom-scrollbar">
+        {sql}
+      </pre>
+      <div className="overflow-x-auto custom-scrollbar mt-xs rounded-xl border border-outline-variant/30">
+        <table className="w-full text-label-sm">
+          <thead>
+            <tr className="bg-surface-container-low">
+              {cols.map((c) => (
+                <th key={c} className="text-left px-sm py-xs font-body-md-bold text-on-surface whitespace-nowrap">
+                  {c}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {shown.map((row, i) => (
+              <tr key={i} className="border-t border-outline-variant/20">
                 {cols.map((c) => (
-                  <th key={c} className="text-left px-sm py-xs font-body-md-bold text-on-surface whitespace-nowrap">
-                    {c}
-                  </th>
+                  <td key={c} className="px-sm py-xs text-on-surface-variant whitespace-nowrap">
+                    {row[c] ?? ""}
+                  </td>
                 ))}
               </tr>
-            </thead>
-            <tbody>
-              {shown.map((row, i) => (
-                <tr key={i} className="border-t border-outline-variant/20">
-                  {cols.map((c) => (
-                    <td key={c} className="px-sm py-xs text-on-surface-variant whitespace-nowrap">
-                      {row[c] ?? ""}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
-    </details>
+    </div>
+  );
+}
+
+function ResultAttachment({ sql, rows }) {
+  const [open, setOpen] = useState(false);
+  if (!rows || rows.length === 0) return null;
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="flex items-center gap-xs mt-sm text-label-sm font-label-sm text-primary hover:underline"
+      >
+        <span className="material-symbols-outlined text-[16px]">table_chart</span>
+        상세 내용 보기 ({rows.length}행)
+      </button>
+      <Modal open={open} onClose={() => setOpen(false)} title="쿼리 결과">
+        <ResultTable sql={sql} rows={rows} />
+      </Modal>
+    </>
   );
 }
 

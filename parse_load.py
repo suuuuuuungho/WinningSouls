@@ -100,9 +100,9 @@ def peek_columns(xlsx_path: Path):
 
 
 def _normalize_division(raw: str) -> str:
-    """"기관" 원본 값이 "중등부 신입부 신입반 신입4반"처럼 여러 단계가 합쳐진
-    문자열이라, Att_* 테이블의 Div 값(카테고리 컬럼, '중등부'/'중등부 신입부'로
-    깨끗함)과 동일하게 맞춰서 조회하기 쉽게 정리함."""
+    """"기관"/"카테고리" 원본 값이 "중등부 신입부 신입반 신입4반"처럼 여러 단계가
+    합쳐진 문자열이라, '중등부' 또는 '중등부 신입부'로 정리해서 조회하기 쉽게 함.
+    Member.Division과 Att_*.Div 양쪽 모두 이 함수를 거쳐야 함."""
     raw = str(raw)
     if raw.startswith("중등부 신입부"):
         return "중등부 신입부"
@@ -172,7 +172,7 @@ def load_attendance(xlsx_path: Path):
         base = {
             "ID": member_id,
             "Name": _clean(row_dict.get(ATT_COLUMNS["name"])),
-            "Div": _clean(row_dict.get(ATT_COLUMNS["div"])),
+            "Div": _normalize_division(row_dict.get(ATT_COLUMNS["div"])),
             "Div_Grade": _clean(row_dict.get(ATT_COLUMNS["div_grade"])),
             "Div_Class": _clean(row_dict.get(ATT_COLUMNS["div_class"])),
             "Status": _clean(row_dict.get(ATT_COLUMNS["status"])),
