@@ -51,6 +51,11 @@ Att/Att_1~Att_School 테이블에 직접 Leader_Div 등을 쓰면 "no such colum
 이 데이터베이스에는 "구역" 이라는 별도 테이블/컬럼이 없다. 사용자가 "구역"을 물으면 문맥상 가장 가까운
 그룹핑 기준(Div_Class(반) 또는 Member와 JOIN한 Leader_Div(인도자 소속)) 중 더 맞는 쪽을 선택해서 사용하고,
 존재하지 않는 컬럼명을 그대로 지어내지 마라.
+
+중요: Att_1~Att_School, Att 테이블의 Div 컬럼은 과거 데이터 중 일부가 "중등부 1학년 1-1반"처럼
+정리되지 않은 값으로 들어가있을 수 있어 신뢰할 수 없다. "부서"(중등부/중등부 신입부)로 필터링해야
+하면 Att.Div를 직접 비교하지 말고 반드시 Member와 JOIN해서 Member.Division(정리된 값, '중등부' 또는
+'중등부 신입부')을 사용해라. Div_Grade/Div_Class는 원래부터 깨끗하니 그대로 사용해도 된다.
 `;
 
 const SQL_SYSTEM_PROMPT = `너는 교회 출석 데이터베이스(SQLite/libSQL)에 대한 SQL 생성기다.
@@ -62,7 +67,26 @@ ${SCHEMA_DESC}
 - 반드시 SELECT 문 하나만 생성 (세미콜론으로 여러 문장 연결 금지)
 - INSERT/UPDATE/DELETE/DROP/ALTER/PRAGMA/ATTACH/CREATE 등 쓰기/시스템 명령 금지
 - 다른 설명 없이 \`\`\`sql 코드블록 안에 쿼리만 출력
-- 오늘 날짜가 필요하면 SQLite의 date('now','localtime') 사용`;
+- 오늘 날짜가 필요하면 SQLite의 date('now','localtime') 사용
+- 몇 명인지/명단 등 여러 교인이 조건에 맞는지 묻는 질문이어도 COUNT(*)로 집계하지 말고
+  해당 교인들의 개별 행(ID, Name 등 식별 가능한 컬럼 포함)을 그대로 SELECT해라. 개수는
+  결과 행 개수로 알 수 있고, 화면에서 상세 목록을 팝업으로 보여줘야 하므로 원본 행이 필요하다.
+  (단, "평균 출석률" 같이 애초에 숫자 하나만 의미가 있는 질문은 그대로 집계해도 된다.)
+- "이번 주"/"지난 주"처럼 최근 날짜를 가리키는 질문은 date('now') 기준 요일 계산으로 날짜를
+  추측하지 말고, Att_Date 컬럼에 실제로 존재하는 값 중 가장 최근 값들을 써라. 예를 들어
+  "지난주에는 왔는데 이번주 안 온 학생"처럼 최근 두 주를 비교하는 질문은 이런 패턴을 참고해라:
+  \`\`\`sql
+  WITH recent AS (
+    SELECT DISTINCT Att_Date FROM Att ORDER BY Att_Date DESC LIMIT 2
+  )
+  SELECT a1.ID, a1.Name, a1.Div_Class
+  FROM Att a1
+  JOIN Att a2 ON a1.ID = a2.ID
+  WHERE a1.Att_Date = (SELECT MIN(Att_Date) FROM recent)
+    AND a1.Att IN ('참석', '타예배')
+    AND a2.Att_Date = (SELECT MAX(Att_Date) FROM recent)
+    AND a2.Att = '불참'
+  \`\`\``;
 
 const FORBIDDEN = /\b(insert|update|delete|drop|alter|attach|pragma|create|replace)\b/i;
 
