@@ -169,12 +169,17 @@ def load_attendance(xlsx_path: Path):
     for _, row in df.iterrows():
         row_dict = row.to_dict()
         member_id = str(_clean(row_dict.get(ATT_COLUMNS["id"])))
+        div_grade = _clean(row_dict.get(ATT_COLUMNS["div_grade"]))
+        div_class = _clean(row_dict.get(ATT_COLUMNS["div_class"]))
         base = {
             "ID": member_id,
             "Name": _clean(row_dict.get(ATT_COLUMNS["name"])),
             "Div": _normalize_division(row_dict.get(ATT_COLUMNS["div"])),
-            "Div_Grade": _clean(row_dict.get(ATT_COLUMNS["div_grade"])),
-            "Div_Class": _clean(row_dict.get(ATT_COLUMNS["div_class"])),
+            "Div_Grade": div_grade,
+            # "장기섬김" 등 반 배정이 없는 학년은 Div_Class가 비어서 "반별" 집계에서
+            # 이름 없는(NULL) 그룹으로 섞여 나와 헷갈림 - 학년명을 반 이름으로도 써서
+            # 그룹핑에서 구분되게 함.
+            "Div_Class": div_class if div_class else div_grade,
             "Status": _clean(row_dict.get(ATT_COLUMNS["status"])),
             "Resister_date": str(_clean(row_dict.get(ATT_COLUMNS["resister_date"])) or ""),
         }
