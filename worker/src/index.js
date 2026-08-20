@@ -44,6 +44,13 @@ Att (주일 단위 집계 - 예배 하나라도 참석하면 "주일예배 참�
                 '불참'   : 아무것도 안 함
               -> "주일예배 결석자"는 WHERE Att='불참' 로 바로 구할 수 있음 (JOIN 불필요).
               -> "주일예배 참석"을 넓게 물으면(교회학교든 다른 예배든 상관없이) Att IN ('참석','타예배') 사용.
+
+중요: Att_1~Att_School, Att 테이블에는 Member의 Leader_ID/Leader/Leader_Div/Leader_Phone/Phone/Birth_Date/Gender
+컬럼이 없다. 이 값들이 필요하면 반드시 Member와 JOIN 해야 한다 (예: JOIN Member m ON Att.ID = m.ID),
+Att/Att_1~Att_School 테이블에 직접 Leader_Div 등을 쓰면 "no such column" 에러가 난다.
+이 데이터베이스에는 "구역" 이라는 별도 테이블/컬럼이 없다. 사용자가 "구역"을 물으면 문맥상 가장 가까운
+그룹핑 기준(Div_Class(반) 또는 Member와 JOIN한 Leader_Div(인도자 소속)) 중 더 맞는 쪽을 선택해서 사용하고,
+존재하지 않는 컬럼명을 그대로 지어내지 마라.
 `;
 
 const SQL_SYSTEM_PROMPT = `너는 교회 출석 데이터베이스(SQLite/libSQL)에 대한 SQL 생성기다.
@@ -105,7 +112,7 @@ function extractSql(text) {
 function validateSql(sql) {
   const stripped = sql.trim().replace(/;+\s*$/, "");
   if (stripped.includes(";")) throw new Error("여러 SQL 문장은 허용되지 않습니다.");
-  if (!/^select/i.test(stripped)) throw new Error("SELECT 쿼리만 허용됩니다.");
+  if (!/^(select|with)\b/i.test(stripped)) throw new Error("SELECT 쿼리만 허용됩니다.");
   if (FORBIDDEN.test(stripped)) throw new Error("허용되지 않는 SQL 키워드가 포함되어 있습니다.");
   return stripped;
 }
