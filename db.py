@@ -87,6 +87,19 @@ SCHEMA_STATEMENTS = [
         value TEXT
     )
     """,
+] + [
+    # UNIQUE(ID, Att_Date)는 ID가 선두 컬럼이라 Att_Date/Div_Grade/Div_Class 단독
+    # 필터·정렬에는 못 쓰임 - Q&A SQL 생성과 /att/rows 둘 다 이 조합으로 자주 필터링하므로
+    # 별도 인덱스가 필요함 (안 그러면 ~75,816행 풀스캔).
+    stmt
+    for table in ["Att"] + ATT_TABLES
+    for stmt in [
+        f"CREATE INDEX IF NOT EXISTS idx_{table.lower()}_date ON {table}(Att_Date)",
+        f"CREATE INDEX IF NOT EXISTS idx_{table.lower()}_class ON {table}(Div_Grade, Div_Class, Att_Date)",
+    ]
+] + [
+    "CREATE INDEX IF NOT EXISTS idx_member_division ON Member(Division)",
+    "CREATE INDEX IF NOT EXISTS idx_member_leader_div ON Member(Leader_Div)",
 ]
 
 
