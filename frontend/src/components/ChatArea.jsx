@@ -1,44 +1,43 @@
 import { useEffect, useRef, useState } from "react";
 import Modal from "./Modal.jsx";
 
-function ResultTable({ sql, rows }) {
-  const cols = Object.keys(rows[0]);
-  const shown = rows.slice(0, 50);
+function ResultTable({ rows }) {
+  const cols = Object.keys(rows[0]).filter((c) => c !== "ID");
+  const sorted = [...rows].sort((a, b) => {
+    if (a.Div_Class == null || b.Div_Class == null) return 0;
+    return String(a.Div_Class).localeCompare(String(b.Div_Class), "ko");
+  });
+  const shown = sorted.slice(0, 50);
 
   return (
-    <div>
-      <pre className="text-label-sm bg-on-surface text-inverse-on-surface rounded-xl p-sm overflow-x-auto custom-scrollbar">
-        {sql}
-      </pre>
-      <div className="overflow-x-auto custom-scrollbar mt-xs rounded-xl border border-outline-variant/30">
-        <table className="w-full text-label-sm">
-          <thead>
-            <tr className="bg-surface-container-low">
+    <div className="overflow-x-auto custom-scrollbar rounded-xl border border-outline-variant/30">
+      <table className="w-full text-label-sm">
+        <thead>
+          <tr className="bg-surface-container-low">
+            {cols.map((c) => (
+              <th key={c} className="text-left px-sm py-xs font-body-md-bold text-on-surface whitespace-nowrap">
+                {c}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {shown.map((row, i) => (
+            <tr key={i} className="border-t border-outline-variant/20">
               {cols.map((c) => (
-                <th key={c} className="text-left px-sm py-xs font-body-md-bold text-on-surface whitespace-nowrap">
-                  {c}
-                </th>
+                <td key={c} className="px-sm py-xs text-on-surface-variant whitespace-nowrap">
+                  {row[c] ?? ""}
+                </td>
               ))}
             </tr>
-          </thead>
-          <tbody>
-            {shown.map((row, i) => (
-              <tr key={i} className="border-t border-outline-variant/20">
-                {cols.map((c) => (
-                  <td key={c} className="px-sm py-xs text-on-surface-variant whitespace-nowrap">
-                    {row[c] ?? ""}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
 
-function ResultAttachment({ sql, rows }) {
+function ResultAttachment({ rows }) {
   const [open, setOpen] = useState(false);
   if (!rows || rows.length === 0) return null;
 
@@ -52,8 +51,8 @@ function ResultAttachment({ sql, rows }) {
         <span className="material-symbols-outlined text-[16px]">table_chart</span>
         상세 내용 보기 ({rows.length}행)
       </button>
-      <Modal open={open} onClose={() => setOpen(false)} title="쿼리 결과">
-        <ResultTable sql={sql} rows={rows} />
+      <Modal open={open} onClose={() => setOpen(false)} title="상세 내용">
+        <ResultTable rows={rows} />
       </Modal>
     </>
   );
@@ -89,7 +88,7 @@ function MessageBubble({ message }) {
         >
           <p className="text-body-md font-body-md whitespace-pre-wrap">{message.content}</p>
         </div>
-        {!isError && <ResultAttachment sql={message.sql} rows={message.rows} />}
+        {!isError && <ResultAttachment rows={message.rows} />}
       </div>
     </div>
   );
