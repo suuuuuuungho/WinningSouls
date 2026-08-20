@@ -1,11 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 
-const EXAMPLES = [
-  "지난주 주일예배 결석자 명단 보여줘",
-  "이번 달 출석률이 가장 낮은 구역은?",
-  "홍길동 최근 4주 출석 몇 번?",
-];
-
 function ResultAttachment({ sql, rows }) {
   if (!rows || rows.length === 0) return null;
   const cols = Object.keys(rows[0]);
@@ -106,7 +100,7 @@ function TypingIndicator() {
   );
 }
 
-function EmptyState({ onExample, disabled }) {
+function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center h-full text-center px-lg">
       <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mb-lg shadow-md">
@@ -116,19 +110,6 @@ function EmptyState({ onExample, disabled }) {
       <p className="text-body-md font-body-md text-on-surface-variant mb-lg max-w-sm">
         디모데에 쌓인 출석 데이터를 바탕으로 자연어 질문에 답합니다.
       </p>
-      <div className="flex flex-wrap gap-sm justify-center max-w-lg">
-        {EXAMPLES.map((q) => (
-          <button
-            key={q}
-            type="button"
-            disabled={disabled}
-            onClick={() => onExample(q)}
-            className="text-body-md font-body-md text-primary border border-primary/40 rounded-full px-md py-xs hover:bg-primary/5 transition-colors disabled:opacity-50"
-          >
-            {q}
-          </button>
-        ))}
-      </div>
     </div>
   );
 }
@@ -155,7 +136,7 @@ export default function ChatArea({ messages, pending, onAsk }) {
     <section className="flex flex-col flex-1 h-full bg-surface">
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-lg py-xl relative custom-scrollbar">
         {messages.length === 0 ? (
-          <EmptyState onExample={onAsk} disabled={pending} />
+          <EmptyState />
         ) : (
           <>
             <div className="flex justify-center sticky top-0 z-10 mb-md">
