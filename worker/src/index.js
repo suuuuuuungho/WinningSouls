@@ -86,7 +86,61 @@ ${SCHEMA_DESC}
     AND a1.Att IN ('참석', '타예배')
     AND a2.Att_Date = (SELECT MAX(Att_Date) FROM recent)
     AND a2.Att = '불참'
+  \`\`\`
+- "출석률이 제일 낮은/높은 반은?"처럼 그룹별 비율을 비교하는 질문은 이런 패턴을 참고해라:
+  \`\`\`sql
+  SELECT Div_Class,
+         ROUND(SUM(CASE WHEN Att IN ('참석','타예배') THEN 1.0 ELSE 0 END) / COUNT(*) * 100, 1) AS 출석률
+  FROM Att
+  WHERE Att_Date >= (SELECT date(MAX(Att_Date), '-84 days') FROM Att)
+  GROUP BY Div_Class
+  ORDER BY 출석률 ASC
+  LIMIT 5
+  \`\`\`
+- 이름으로 찾는 질문은 동명이인이 있을 수 있으니 임의로 한 명만 고르지 말고 이름이 일치하는
+  행을 전부 반환해라(필요하면 ID/Div_Class로 구분되게):
+  \`\`\`sql
+  SELECT ID, Name, Div_Grade, Div_Class, Att_Date, Att
+  FROM Att
+  WHERE Name = '홍길동'
+  ORDER BY Att_Date DESC
+  LIMIT 20
+  \`\`\`
+- "OOO 인도자 밑에 학생들 중 결석 많은 사람" 같은 인도자 기준 질문은 Member와 JOIN해라
+  (Att_1~Att_School/Att 테이블에는 Leader 컬럼이 없다):
+  \`\`\`sql
+  SELECT a.ID, a.Name, COUNT(*) AS 결석수
+  FROM Att a
+  JOIN Member m ON a.ID = m.ID
+  WHERE m.Leader = '김리더'
+    AND a.Att = '불참'
+    AND a.Att_Date >= (SELECT date(MAX(Att_Date), '-84 days') FROM Att)
+  GROUP BY a.ID, a.Name
+  ORDER BY 결석수 DESC
   \`\`\``;
+
+const SQL_RETRY_SUFFIX = (errorMessage) =>
+  `방금 응답은 유효한 SQL이 아닙니다 (${errorMessage}). 다른 설명 없이 \`\`\`sql 코드블록 안에 ` +
+  `SELECT 또는 WITH로 시작하는 SQL 쿼리 한 개만 다시 출력해라.`;
+
+class SqlGenerationError extends Error {}
+
+async function generateSql(env, question) {
+  const messages = [{ role: "user", content: question }];
+  let lastErr;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const sqlText = await callClaude(env, { system: SQL_SYSTEM_PROMPT, messages });
+    try {
+      return validateSql(extractSql(sqlText));
+    } catch (err) {
+      lastErr = err;
+      if (attempt === 1) break;
+      messages.push({ role: "assistant", content: sqlText });
+      messages.push({ role: "user", content: SQL_RETRY_SUFFIX(err.message) });
+    }
+  }
+  throw new SqlGenerationError(lastErr.message);
+}
 
 const FORBIDDEN = /\b(insert|update|delete|drop|alter|attach|pragma|create|replace)\b/i;
 
@@ -243,11 +297,23 @@ export default {
         return json({ error: "question 필드가 필요합니다." }, 400, env);
       }
 
-      const sqlText = await callClaude(env, {
-        system: SQL_SYSTEM_PROMPT,
-        messages: [{ role: "user", content: question }],
-      });
-      const sql = validateSql(extractSql(sqlText));
+      let sql;
+      try {
+        sql = await generateSql(env, question);
+      } catch (err) {
+        if (err instanceof SqlGenerationError) {
+          return json(
+            {
+              sql: null,
+              rows: [],
+              answer: "죄송해요, 질문을 이해하지 못했어요. 다르게 표현해서 다시 물어봐 주시겠어요?",
+            },
+            200,
+            env
+          );
+        }
+        throw err;
+      }
 
       const db = createClient({
         url: env.TURSO_DATABASE_URL,
@@ -260,20 +326,32 @@ export default {
         return obj;
       });
 
-      const preview = JSON.stringify(rows.slice(0, 50));
+      if (rows.length === 0) {
+        return json({ sql, rows, answer: "해당 조건에 맞는 결과가 없습니다." }, 200, env);
+      }
+
+      if (rows.length === 1 && Object.keys(rows[0]).length === 1) {
+        return json({ sql, rows, answer: `${Object.values(rows[0])[0]}` }, 200, env);
+      }
+
+      const preview =
+        rows.length > 5
+          ? JSON.stringify({ count: rows.length, sample: rows.slice(0, 5) })
+          : JSON.stringify(rows);
       const answer = await callClaude(env, {
         system:
           "너는 교회 출석 데이터 조회 결과를 한국어로 간결하게 요약해서 답해주는 도우미다. " +
           "숫자와 이름 등 사실만 근거로 답하고, 결과에 없는 내용은 추측하지 마라. " +
           "결과가 여러 행(예: 명단)이면 이름을 나열하지 말고 개수와 핵심 요약만 답하고, " +
           "'상세 내역은 아래 상세 내용 보기를 눌러서 확인해보세요' 라는 안내로 마무리해라. " +
-          "결과가 한두 건이거나 단일 값(개수 등)이면 그 값만 답하면 되고 위 안내 문구는 붙이지 않아도 된다.",
+          "결과가 한두 건이면 그 내용을 그대로 답하면 되고 위 안내 문구는 붙이지 않아도 된다.",
         messages: [
           {
             role: "user",
-            content: `질문: ${question}\n\n쿼리 결과(JSON, 최대 50행):\n${preview}`,
+            content: `질문: ${question}\n\n쿼리 결과(JSON):\n${preview}`,
           },
         ],
+        maxTokens: 200,
       });
 
       return json({ sql, rows, answer }, 200, env);
